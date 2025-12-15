@@ -10,24 +10,44 @@ if (!defined('DOKU_INC')) die();
 
 <!-- ********** FOOTER ********** -->
 <footer id="dokuwiki__footer"><div class="pad">
-    <?php tpl_license(''); // license text ?>
+    <div class="grid3">
+        <div>
+            <div class="header">Warto wiedzieć</div>
+            <a href="https://www.dokuwiki.org/donate" title="Donate" target="_blank" rel="external">Donate Dokuwiki</a>
+        </div>
+        <div>
+            <div class="header">Warto wspierać</div>
+            <a href="/patronite.html">Patronite</a>
+            <a rel="external" target="_blank" href="https://agendaparkingowa.pl/">
+                Agenda Parkingowa
+            </a>
+            <a rel="external" target="_blank" href="https://www.change.org/Rowne-Prawa-Dla-Pieszych-i-Kierowcow">
+                Podpisz wniosek do RPO
+            </a>
+            <a rel="external" target="_blank" href="https://www.facebook.com/groups/patologiaparkingowa/">
+                Grupa wsparcia na FB
+            </a>
+            <a href="https://suppi.pl/uprzejmiedonosze"
+                target="_blank"
+                rel="external">Jednorazowa wpłata</a>
+            <a href="/naklejki-robisz-to-zle.html">Kup naklejki</a>
+        </div>
+        <div>
+            <div class="header">O projekcie</div>
+            <a href="https://patronite.pl/uprzejmiedonosze/posts" target="_blank" rel="external">
+                Comiesięczna aktualizacja
+            </a>
+            <a href="https://x.com/SzymonNieradka" target="_blank" rel="external">
+                Codzienne aktualizacje
+            </a>
+            <a href="/changelog.html">Historia zmian</a>
+            <a href="/projekt.html">Dla programistów</a>
+            <a href="/regulamin.html">Regulamin</a>
+            <a href="/polityka-prywatnosci.html">Polityka prywatności</a>
+            <a href="/bezpieczenstwo.html">Bezpieczeństwo</a>
+            <a href="/kontakt.html">Kontakt</a>
+        </div>
 
-    <div class="buttons">
-        <?php
-            tpl_license('button', true, false, false); // license button, no wrapper
-            $target = ($conf['target']['extern']) ? 'target="' . $conf['target']['extern'] . '"' : '';
-        ?>
-        <a href="https://www.dokuwiki.org/donate" title="Donate" <?php echo $target?>><img
-            src="<?php echo tpl_basedir(); ?>images/button-donate.gif" width="80" height="15" alt="Donate" /></a>
-        <a href="https://php.net" title="Powered by PHP" <?php echo $target?>><img
-            src="<?php echo tpl_basedir(); ?>images/button-php.gif" width="80" height="15" alt="Powered by PHP" /></a>
-        <a href="//validator.w3.org/check/referer" title="Valid HTML5" <?php echo $target?>><img
-            src="<?php echo tpl_basedir(); ?>images/button-html5.png" width="80" height="15" alt="Valid HTML5" /></a>
-        <a href="//jigsaw.w3.org/css-validator/check/referer?profile=css3" title="Valid CSS" <?php echo $target?>><img
-            src="<?php echo tpl_basedir(); ?>images/button-css.png" width="80" height="15" alt="Valid CSS" /></a>
-        <a href="https://dokuwiki.org/" title="Driven by DokuWiki" <?php echo $target?>><img
-            src="<?php echo tpl_basedir(); ?>images/button-dw.png" width="80" height="15"
-            alt="Driven by DokuWiki" /></a>
     </div>
 
     <?php tpl_includeFile('footer.html'); ?>

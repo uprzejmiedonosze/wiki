@@ -4,6 +4,54 @@
  */
 
 /* ============================================
+   LESS Variables - Colors
+   ============================================ */
+@brand-primary: #009c7f;      // Main green color
+@brand-accent: #e9c200;        // Yellow accent for buttons
+@text-color: #333;             // Dark text for readability
+@background-color: #fff;       // White background
+@background-site: #fafafa;     // Light gray site background
+@width-break: 35em;
+
+/* ============================================
+   LESS Variables - Sizes & Dimensions
+   ============================================ */
+@header-height: 60px;
+@content-max-width: 1024px;
+@font-base: 16px;
+@font-body: 16px;
+@font-h1: 36px;
+@font-h2: 28px;
+@font-h3: 22px;
+@line-height-base: 1.7;
+@border-radius-button: 22px;
+
+/* ============================================
+   LESS Variables - Spacing
+   ============================================ */
+@padding-desktop-vertical: 40px;
+@padding-desktop-horizontal: 30px;
+@padding-mobile-vertical: 20px;
+@padding-mobile-horizontal: 15px;
+@paragraph-margin: 1.2em;
+
+/* ============================================
+   LESS Variables - Breakpoints
+   ============================================ */
+@breakpoint-tablet: 800px;
+@breakpoint-mobile: 480px;
+
+/* ============================================
+   LESS Variables - Z-index
+   ============================================ */
+@z-index-header: 1000;
+@z-index-mobile-menu: 999;
+@z-index-dropdown: 100;
+@z-index-elevated: 10;
+@z-index-base: 1;
+
+
+/* ============================================
    Google Fonts Import
    ============================================ */
 @font-face {
@@ -78,53 +126,6 @@
 }
 
 /* ============================================
-   LESS Variables - Colors
-   ============================================ */
-@brand-primary: #009c7f;      // Main green color
-@brand-accent: #e9c200;        // Yellow accent for buttons
-@text-color: #333;             // Dark text for readability
-@background-color: #fff;       // White background
-@background-site: #fafafa;     // Light gray site background
-@width-break: 35em;
-
-/* ============================================
-   LESS Variables - Sizes & Dimensions
-   ============================================ */
-@header-height: 60px;
-@content-max-width: 850px;
-@font-base: 16px;
-@font-body: 18px;
-@font-h1: 36px;
-@font-h2: 28px;
-@font-h3: 22px;
-@line-height-base: 1.7;
-@border-radius-button: 22px;
-
-/* ============================================
-   LESS Variables - Spacing
-   ============================================ */
-@padding-desktop-vertical: 40px;
-@padding-desktop-horizontal: 30px;
-@padding-mobile-vertical: 20px;
-@padding-mobile-horizontal: 15px;
-@paragraph-margin: 1.2em;
-
-/* ============================================
-   LESS Variables - Breakpoints
-   ============================================ */
-@breakpoint-tablet: 800px;
-@breakpoint-mobile: 480px;
-
-/* ============================================
-   LESS Variables - Z-index
-   ============================================ */
-@z-index-header: 1000;
-@z-index-mobile-menu: 999;
-@z-index-dropdown: 100;
-@z-index-elevated: 10;
-@z-index-base: 1;
-
-/* ============================================
    Fixed Header Styles
    ============================================ */
 
@@ -175,6 +176,15 @@ body {
 
 #dokuwiki__content {
     margin-top: 0;
+    background-color: #fff;
+}
+
+#dokuwiki__site {
+    max-width: @content-max-width;
+}
+
+.pageId {
+    display: none;
 }
 
 /* ============================================
@@ -326,6 +336,10 @@ p, .dokuwiki p,
 .dokuwiki div.page {
     font-size: @font-body;
     line-height: @line-height-base;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+
 }
 
 /* Paragraph spacing */
@@ -417,8 +431,8 @@ h6, .dokuwiki h6 {
 
 @media (max-width: @breakpoint-mobile) {
     .breadcrumbs {
-        padding: 0 @padding-mobile-horizontal;
-        margin: 15px auto;
+        padding: 15px @padding-mobile-horizontal;
+        margin: 0 auto;
     }
     
     .header-left {
@@ -454,6 +468,11 @@ h6, .dokuwiki h6 {
     margin: 0 auto;
     border: 0 solid rgba(217, 217, 217, .5);
     border-width: 0 1px;
+    
+}
+
+.dokuwiki .wrapper {
+    margin-bottom: 0;
 }
 
 /* Sidebar adjustments when present */
@@ -600,8 +619,8 @@ h6, .dokuwiki h6 {
     
     /* Mobile breadcrumbs */
     .breadcrumbs {
-        padding: 0 @padding-mobile-horizontal;
-        margin: 15px auto;
+        padding: 15px @padding-mobile-horizontal;
+        margin: 0 auto;
         font-size: 13px;
     }
     
@@ -909,7 +928,7 @@ a,
     background-color: @brand-primary;
     color: #fff;
     border: none;
-    padding: 10px 20px;
+    //padding: 0;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1117,13 +1136,27 @@ a,
 }
 
 .button {
-    .base-button;
+    //.base-button;
     border-radius: 16vmin;
 }
 
-
-
-
+.dokuwiki {
+    div.toolbar button.toolbutton,
+    div.editButtons button {
+        background-color: @background-site;
+        color: @text-color;
+        border-width: 1px 0 1px 1px;
+        border-style: solid;
+        border-color: #ccc;
+        &:last-child {
+            border-width: 1px;
+        }
+    }
+    div.editButtons button {
+        margin-right: 5px;
+        border-width: 1px;
+    }
+}
 
 /** menu */
 
@@ -1327,4 +1360,67 @@ label.menu {
         box-shadow: 0 0px 20px #00000030;
     }
 
+}
+
+
+footer {
+    background-color: black;
+
+    border-color: #ddd;
+    color: white;
+    font-weight: 700;
+    border-width: 1px 0;
+    border-style: solid;
+    position: absolute;
+    width: 100%;
+    left: 0;
+
+    .grid3 {
+        max-width: @content-max-width;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 1em 2em;
+
+        @media (min-width: 500px) {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        @media (min-width: 700px) {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        div>.header {
+            text-transform: uppercase;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 1em;
+            margin-top: 2em;
+            text-align: left;
+        }
+
+        div>a {
+            font-size: 14px;
+            display: block;
+            color: white;
+            text-decoration: none;
+            user-select: none;
+            margin-bottom: 1em;
+            font-weight: 400;
+            color: white!important;
+            margin-bottom: 0;
+            text-align: left;
+        }
+        div>a[rel~="external"]::after {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z'/%3E%3Cpath fill-rule='evenodd' d='M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z'/%3E%3C/svg%3E");
+        }
+
+    }
+
+    h4 {
+        margin: 0 1em;
+        padding: 1em 0;
+        text-align: center;
+    }
 }
