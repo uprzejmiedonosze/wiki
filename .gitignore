@@ -43,6 +43,7 @@
 !data/pages/wiki/
 /lib/tpl/*
 !/lib/tpl/dokuwiki
+!/lib/tpl/uprzejmiedonosze
 !/lib/tpl/index.php
 /lib/plugins/*
 !/lib/plugins/acl
