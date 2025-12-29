@@ -67,10 +67,30 @@ class action_plugin_authud extends ActionPlugin
      */
     private function modifyFormForNickname(Event $event)
     {
+        global $auth;
+        global $INPUT;
+
         /**
-         * @var dokuwiki\Form\Form $form 
+         * @var dokuwiki\Form\Form $form
          */
         $form =& $event->data;
+
+        /**
+         * @var helper_plugin_authud $helper
+         */
+        $helper = $this->loadHelper('authud');
+
+        // Get user data from session
+        $userData = $helper->validateSession();
+
+        // Generate username suggestion
+        $suggestion = '';
+        if ($userData && isset($userData['real_name'])) {
+            $suggestion = $helper->generateUsernameSuggestion($userData['real_name']);
+            if ($suggestion === false) {
+                $suggestion = ''; // Fall back to empty if generation fails
+            }
+        }
 
         // Remove password field
         $passPos = $form->findPositionByAttribute('name', 'p');
@@ -84,11 +104,11 @@ class action_plugin_authud extends ActionPlugin
             $form->removeElement($rememberPos);
         }
 
-        // Find username field and clear its value
+        // Find username field and set suggested value
         $userPos = $form->findPositionByAttribute('name', 'u');
         if ($userPos !== false) {
             $element = $form->getElementAt($userPos);
-            $element->val(''); // Empty field
+            $INPUT->set('u',$suggestion);
             // Update label
             $label = $element->getLabel();
             if ($label) {

@@ -100,6 +100,7 @@ class helper_plugin_authud extends Plugin
             'valid' => $data['valid'],
             'user_id' => $data['user_id'],
             'user_email' => $data['user_email'],
+            'real_name' => $data['user_name']
         ];
 
         Logger::debug('authud', 'validateSession: session validated for user ' . $userData['user_id']);
@@ -108,5 +109,60 @@ class helper_plugin_authud extends Plugin
         $this->sessionCache = $userData;
 
         return $userData;
+    }
+
+    /**
+     * Generate a username suggestion from real name
+     *
+     * Converts real name to a valid DokuWiki username by:
+     * - Romanizing and deaccenting characters (ł→l, ą→a, etc.)
+     * - Converting to lowercase
+     * - Replacing spaces with hyphens
+     * - Removing invalid characters
+     * - Checking for collisions and adding random suffix if needed
+     *
+     * @param string $realName The user's real name from external API
+     * @return string|false Suggested username or false on failure
+     */
+    public function generateUsernameSuggestion($realName)
+    {
+        global $auth;
+
+        // Validate input
+        if (empty($realName) || !is_string($realName)) {
+            return false;
+        }
+
+        // Replace spaces and separators with hyphens
+        $username = str_replace([':', '/', ';', ' '], '-', $realName);
+
+        // Use cleanUser() for DokuWiki normalization (romanization, deaccenting, cleanID)
+        $username = $auth->cleanUser($username);
+
+        // Fallback if name produces no valid characters
+        if (empty($username)) {
+            $username = 'user';
+        }
+
+        // Check for collisions and add random suffix if needed
+        $baseUsername = $username;
+        $attempts = 0;
+        $maxAttempts = 10;
+
+        while ($auth->getUserDataByName($username) !== false) {
+            $attempts++;
+
+            if ($attempts > $maxAttempts) {
+                // Ultimate fallback: use timestamp
+                $username = $baseUsername . '-' . time();
+                break;
+            }
+
+            // Generate random 4-character hex suffix
+            $suffix = bin2hex(random_bytes(2));
+            $username = $baseUsername . '-' . $suffix;
+        }
+
+        return $username;
     }
 }
