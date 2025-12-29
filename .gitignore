@@ -29,6 +29,7 @@
 !/conf/scheme.conf
 !/conf/smileys.conf
 !/conf/wordblock.conf
+!/conf/local.php
 /data/attic/*
 /data/cache/*
 /data/index/*
