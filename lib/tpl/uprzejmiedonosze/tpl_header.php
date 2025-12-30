@@ -26,23 +26,29 @@ if (!defined('DOKU_INC')) die();
     </div>
     <div class="container">
         <nav class="nav" data-role-menu="">
-
-            <?php if ($conf['useacl']) : ?>
-                <?php if (!empty($_SERVER['REMOTE_USER'])) {
-                    tpl_userinfo(); /* 'Logged in as ...' */
-                }
-                    echo (new \dokuwiki\Menu\UserMenu())->getListItems('action ');
+<h1>Zgłoszenia</h1>
+            <ul>
+              <li><a href="/nowe-zgloszenie.html">Nowe zgłoszenie</a></li>
+              <?php if ($conf['useacl'] && !empty($_SERVER['REMOTE_USER'])) { ?>
+              <li><a href='/moje-zgloszenia.html'>Moje zgłoszenia</a></li>
+              <?php }; ?>
+            </ul>
+<h1>Wiki</h1>
+            <ul>
+              <?php if ($conf['useacl']) : ?>
+                <?php if (!empty($_SERVER['REMOTE_USER'])) { ?>
+                <li class='username'><?php tpl_userinfo(); /* 'Logged in as ...' */ ?></li>
+                <?php } 
+                      echo (new \dokuwiki\Menu\UserMenu())->getListItems('action ');
                 ?>
-            <?php endif ?>
-
+              <?php endif ?>
+            </ul>
             <div class="spacer"></div>
-
+            <ul><li>
             <?php echo (new \dokuwiki\Menu\MobileMenu())->getDropdown($lang['tools']); ?>
+            </li><li>
             <?php echo (new \dokuwiki\Menu\SiteMenu())->getListItems('action ', false); ?>
-            <a tabindex="0" href="/" class="first">Start</a>
-            <a class="" href="/nowe-zgloszenie.html">
-                Nowe zgłoszenie
-            </a>
+            </li></ul>
         </nav>
     </div>
 </header><!-- /header -->
