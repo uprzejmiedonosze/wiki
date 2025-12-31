@@ -1,0 +1,7 @@
+base   authud
+author Lukasz Biegaj
+email  ud@x93.org
+date   2025-12-12
+name   UprzejmieDonosze Auth Plugin
+desc   Provides user authentication against UD remote auth endpoint
+url    https://github.com/uprzejmiedonosze/wiki/tree/master/lib/plugins/authud
