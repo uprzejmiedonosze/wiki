@@ -2,8 +2,8 @@
 clear-cache:
 	@rm -rf data/cache/[a-z0-9]
 
-.PHONY: start
-start: clear-cache
+.PHONY: dev
+dev: clear-cache
 	@php -S localhost:8080
 
 .PHONY: deploy
