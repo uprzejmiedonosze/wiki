@@ -142,7 +142,7 @@ $conf['rss_show_deleted'] = 1;           //Show deleted items 0|1
 
 /* Advanced Settings */
 $conf['updatecheck'] = 1;                //automatically check for new releases?
-$conf['userewrite']  = 0;                //this makes nice URLs: 0: off 1: .htaccess 2: internal
+$conf['userewrite']  = 2;                //this makes nice URLs: 0: off 1: .htaccess 2: internal
 $conf['useslash']    = 0;                //use slash instead of colon? only when rewrite is on
 $conf['sepchar']     = '_';              //word separator character in page names; may be a
                                          //  letter, a digit, '_', '-', or '.'.
@@ -154,7 +154,7 @@ $conf['compression'] = 'gz';             //compress old revisions: (0: off) ('gz
 $conf['gzip_output'] = 0;                //use gzip content encoding for the output xhtml (if allowed by browser)
 $conf['compress']    = 1;                //Strip whitespaces and comments from Styles and JavaScript? 1|0
 $conf['cssdatauri']  = 512;              //Maximum byte size of small images to embed into CSS, won't work on IE<8
-$conf['send404']     = 0;                //Send an HTTP 404 status for nonexistent pages?
+$conf['send404']     = 1;                //Send an HTTP 404 status for nonexistent pages?
 $conf['broken_iua']  = 0;                //Platform with broken ignore_user_abort (IIS+CGI) 0|1
 $conf['xsendfile']   = 0;                //Use X-Sendfile (1 = lighttpd, 2 = standard)
 $conf['renderer_xhtml'] = 'xhtml';       //renderer to use for main page generation

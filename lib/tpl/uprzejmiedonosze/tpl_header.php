@@ -12,7 +12,7 @@ if (!defined('DOKU_INC')) die();
 <header id="dokuwiki__header" class="fixed-header">
     <?php tpl_includeFile('header.html') ?>
     <h1>
-        <a href="/">Uprzejme Wiki</a>
+        <a href="/wiki">Uprzejme Wiki</a>
     </h1>
     <input id="toggle" type="checkbox">
     <div id="courtain"></div>
@@ -38,7 +38,7 @@ if (!defined('DOKU_INC')) die();
               <?php if ($conf['useacl']) : ?>
                 <?php if (!empty($_SERVER['REMOTE_USER'])) { ?>
                 <li class='username'><?php tpl_userinfo(); /* 'Logged in as ...' */ ?></li>
-                <?php } 
+                <?php }
                       echo (new \dokuwiki\Menu\UserMenu())->getListItems('action ');
                 ?>
               <?php endif ?>

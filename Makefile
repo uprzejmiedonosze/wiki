@@ -2,6 +2,11 @@
 clear-cache:
 	@rm -rf data/cache/[a-z0-9]
 
-.PHONY:
-start: clear-cache
-	@php -S localhost:8000
+.PHONY: dev
+dev: clear-cache
+	@php -S localhost:8080
+
+.PHONY: deploy
+deploy:
+	@rsync -r bin lib conf inc vendor *php workflow:/var/www/wiki.uprzejmiedonosze.net/wiki/
+
