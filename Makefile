@@ -4,9 +4,9 @@ clear-cache:
 
 .PHONY: start
 start: clear-cache
-	@php -S localhost:8080 www.php
+	@php -S localhost:8080
 
-.PHONY: sync
-sync:
+.PHONY: deploy
+deploy:
 	@rsync -r bin lib conf inc vendor *php workflow:/var/www/wiki.uprzejmiedonosze.net/
 
