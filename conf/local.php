@@ -11,12 +11,12 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
     $conf['baseurl']    = 'http://localhost:8080/';
     $conf['cookiedir']  = '/';
 } else {
-    $conf['basedir']    = '/wiki/';
-    $conf['baseurl']    = 'https://uprzejmiedonosze.net/wiki/';
-    $conf['cookiedir']  = '/wiki/';
+    $conf['basedir']    = '/';
+    $conf['baseurl']    = '';
+    $conf['cookiedir']  = '/';
 }
 
-$conf['userewrite'] = 2;
+$conf['userewrite'] = 1; 
 $conf['useslash']   = 1;
 $conf['sepchar']    = '_';
 
