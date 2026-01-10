@@ -12,13 +12,13 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
     $conf['cookiedir']  = '/';
     $conf['userewrite'] = 0;
 } else {
-    $conf['basedir']    = '/';
+    $conf['basedir']    = '/wiki/';
     $conf['baseurl']    = '';
-    $conf['cookiedir']  = '/';
-    $conf['userewrite'] = 1;
+    $conf['cookiedir']  = '/wiki/';
+    $conf['userewrite'] = 2;
 }
 
 
-$conf['useslash']   = 1;
+$conf['useslash']   = 0;
 $conf['sepchar']    = '_';
 $conf['breadcrumbs'] = 0;
