@@ -8,16 +8,17 @@ $conf['template']    = 'uprzejmiedonosze';
 
 if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
     $conf['basedir']    = '/';
-    $conf['baseurl']    = 'http://localhost:8080/';
+    $conf['baseurl']    = '';
     $conf['cookiedir']  = '/';
+    $conf['userewrite'] = 0;
 } else {
     $conf['basedir']    = '/';
     $conf['baseurl']    = '';
     $conf['cookiedir']  = '/';
+    $conf['userewrite'] = 1;
 }
 
-$conf['userewrite'] = 1; 
+
 $conf['useslash']   = 1;
 $conf['sepchar']    = '_';
-
 $conf['breadcrumbs'] = 0;
