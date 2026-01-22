@@ -6,7 +6,24 @@ $conf['license'] = 'cc-by-sa';
 $conf['disableactions'] = 'register';
 $conf['template']    = 'uprzejmiedonosze';
 
-if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
+
+function isProd(): bool {
+    return $_SERVER['HTTP_HOST'] == 'uprzejmiedonosze.net' || $_SERVER['HTTP_HOST'] == 'shadow.uprzejmiedonosze.net';
+}
+
+function isStaging(): bool {
+    return $_SERVER['HTTP_HOST'] == 'wiki.uprzejmiedonosze.net';
+}
+
+function isDev(): bool {
+    return !isProd() && !isStaging();
+}
+
+$conf['useslash']   = 0;
+$conf['sepchar']    = '_';
+$conf['breadcrumbs'] = 0;
+
+if (isDev()) {
     $conf['basedir']    = '/';
     $conf['baseurl']    = '';
     $conf['cookiedir']  = '/';
@@ -18,7 +35,10 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
     $conf['userewrite'] = 2;
 }
 
+if (isStaging()) {
+    require('./local-staging.php');
+}
 
-$conf['useslash']   = 0;
-$conf['sepchar']    = '_';
-$conf['breadcrumbs'] = 0;
+if (isProd()) {
+    require('./local-prod.php');
+}
