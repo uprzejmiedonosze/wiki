@@ -23,22 +23,25 @@ $conf['useslash']   = 0;
 $conf['sepchar']    = '_';
 $conf['breadcrumbs'] = 0;
 
+$conf['basedir']    = '/wiki/';
+$conf['baseurl']    = '';
+$conf['cookiedir']  = '/wiki/';
+$conf['userewrite'] = 2;
+$conf['useacl']     = 1;
+$conf['defaultgroup'] = 'user';
+
 if (isDev()) {
     $conf['basedir']    = '/';
     $conf['baseurl']    = '';
     $conf['cookiedir']  = '/';
     $conf['userewrite'] = 0;
-} else {
-    $conf['basedir']    = '/wiki/';
-    $conf['baseurl']    = '';
-    $conf['cookiedir']  = '/wiki/';
-    $conf['userewrite'] = 2;
+    $conf['useacl']     = 0;
 }
 
 if (isStaging()) {
-    require('./local-staging.php');
+    require(dirname(__FILE__) . '/local-staging.php');
 }
 
 if (isProd()) {
-    require('./local-prod.php');
+    require(dirname(__FILE__) . '/local-prod.php');
 }
