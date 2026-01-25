@@ -12,7 +12,7 @@ if (!defined('DOKU_INC')) die();
 <header id="dokuwiki__header" class="fixed-header">
     <?php tpl_includeFile('header.html') ?>
     <h1>
-        <a href="/wiki">Uprzejme Wiki</a>
+        <a href="/wiki/">Uprzejme Wiki</a>
     </h1>
     <input id="toggle" type="checkbox">
     <div id="courtain"></div>
@@ -26,14 +26,14 @@ if (!defined('DOKU_INC')) die();
     </div>
     <div class="container">
         <nav class="nav" data-role-menu="">
-<h1>Zgłoszenia</h1>
+            <h1>Zgłoszenia</h1>
             <ul>
               <li><a href="/nowe-zgloszenie.html">Nowe zgłoszenie</a></li>
               <?php if ($conf['useacl'] && !empty($_SERVER['REMOTE_USER'])) { ?>
               <li><a href='/moje-zgloszenia.html'>Moje zgłoszenia</a></li>
               <?php }; ?>
             </ul>
-<h1>Wiki</h1>
+            <h1>Wiki</h1>
             <ul>
               <?php if ($conf['useacl']) : ?>
                 <?php if (!empty($_SERVER['REMOTE_USER'])) { ?>
