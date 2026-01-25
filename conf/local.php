@@ -10,6 +10,10 @@ if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
     $conf['basedir']    = '/';
     $conf['baseurl']    = 'http://localhost:8080/';
     $conf['cookiedir']  = '/';
+} elseif ($_SERVER['HTTP_HOST'] === 'ud-dev.x93.org') {
+    $conf['basedir']    = '/wiki/';
+    $conf['baseurl']    = 'https://ud-dev.x93.org/';
+    $conf['cookiedir']  = '/wiki/';
 } else {
     $conf['basedir']    = '/';
     $conf['baseurl']    = '';
