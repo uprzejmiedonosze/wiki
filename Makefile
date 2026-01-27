@@ -4,7 +4,8 @@ clear-cache:
 
 .PHONY: dev
 dev: clear-cache
-	@php -S localhost:8080
+	@echo "Starting DokuWiki development server with path mapping..."
+	@php -S localhost:8080 router.php
 
 .PHONY: deploy
 deploy:
