@@ -23,7 +23,7 @@
 @font-h1: 36px;
 @font-h2: 28px;
 @font-h3: 22px;
-@line-height-base: 1.7;
+@line-height-base: 1.4;
 @border-radius-button: 22px;
 
 /* ============================================
@@ -133,7 +133,7 @@ body header#dokuwiki__header {
     position: fixed;
     width: 100%;
     z-index: 2;
-    color: #fff;
+    color: #000;
     background-color: @brand-primary;
     height: @header-height;
     top: 0;
@@ -144,13 +144,14 @@ body header#dokuwiki__header {
     h1 {
         text-align: center;
         display: block;
+        height: 60px;
         margin: 0 20%;
         text-overflow: ellipsis;
         overflow: hidden;
         white-space: nowrap;
         font-size: 16px;
         a {
-            color: #fff;
+            color: #000;
             text-decoration: none;
             font-weight: 700;
             position: absolute;
@@ -303,7 +304,7 @@ input, textarea, select, button,
 /* Font size hierarchy */
 h1, .dokuwiki h1 {
     font-size: @font-h1;
-    line-height: 1.3;
+    line-height: 1.4;
 }
 
 h2, .dokuwiki h2 {
@@ -906,7 +907,7 @@ a,
 
 /* Header links (white on green background) */
 #dokuwiki__header a {
-    color: #fff;
+    color: #000;
     text-decoration: none;
     
     &:hover {
@@ -1048,6 +1049,9 @@ a,
 
 /* Search form styling */
 .dokuwiki form.search {
+    position: fixed;
+    top: 10px;
+    right: -69px;
     input[type="text"] {
         border: 1px solid #ccc;
         
@@ -1192,7 +1196,6 @@ a,
 #courtain {
     position: fixed;
     z-index: 1;
-    width: 100vw;
     height: 100vh;
     background-color: #0009;
     transform: translateY(-100vh);
@@ -1200,7 +1203,7 @@ a,
 }
 
 .nav {
-    box-shadow: 8px 0 20px #00000033;
+    box-shadow: 8px 0 20px rgba(0,0,0,0.3);
     background-color: white;
     flex-direction: column;
     width: 70%;
@@ -1210,17 +1213,42 @@ a,
     transform: translateY(-100%);
     overflow: hidden auto;
     padding: 0;
-    z-index: 3;
+    z-index: 30;
 }
 
-nav.nav > a {
+nav.nav > h1 {
+  height: 60px;
+  padding-top: 16px;
+  padding-left: 14px;
+  font-weight: 700;
+  text-align: left !important;
+  margin: 0 !important;
+  background-color: @brand-primary;
+  color: #fff;
+}
+
+nav.nav > ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+nav.nav > ul > li {
+  padding: 14px;
+  margin: 0;
+}
+
+nav.nav > ul > li.username { float: left; }
+nav.nav > ul > li.logout { float: right; }
+
+nav.nav > ul > li > a {
     cursor: pointer;
     color: #000 !important;
     font-weight: 400;
 }
 
 nav.nav > .spacer {
-    background-color: #00000033;
+    border-top: 1px solid @brand-primary;
     padding: 1px 0 !important;
 }
 nav.nav > .spacer-new {
@@ -1233,19 +1261,14 @@ nav.nav > .spacer-new {
     
 }
 
-nav.nav > a, nav.nav > .spacer {
+nav.nav > ul > li > a, nav.nav > .spacer {
     clear: both;
     white-space: nowrap;
     width: 100%;
-    padding: 14px;
     text-decoration: none;
     display: block;
     position: relative;
     user-select: none;
-
-    @media (min-width: 900px) {
-        padding: 14px 28px;
-    }
 
     &.first {
         background-color: @brand-primary;
@@ -1307,14 +1330,12 @@ label.menu {
 
 .button-toggle {
     .menu-button;
-    margin-left: calc(1em - 22px);
     padding: 30px 0;
     width: 80px;
     background: @brand-primary;
+    position: fixed;
+    left: -69px;
 
-    @media (min-width: 900px) {
-        margin-left: calc(2em - 22px);
-    }
     .icon {
         position: absolute;
         top: calc((100% - 3px) / 2);

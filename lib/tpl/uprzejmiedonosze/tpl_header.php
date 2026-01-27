@@ -12,7 +12,7 @@ if (!defined('DOKU_INC')) die();
 <header id="dokuwiki__header" class="fixed-header">
     <?php tpl_includeFile('header.html') ?>
     <h1>
-        <a href="/wiki">Uprzejme Wiki</a>
+        <a href="/wiki/">Uprzejme Wiki</a>
     </h1>
     <input id="toggle" type="checkbox">
     <div id="courtain"></div>
@@ -24,14 +24,33 @@ if (!defined('DOKU_INC')) die();
         </label>
         <?php tpl_searchform(); ?>
     </div>
-    <?php tpl_searchform(); ?>
-
-    <?php if ($conf['useacl']) : ?>
-        <?php if (!empty($_SERVER['REMOTE_USER'])) {
-            tpl_userinfo(); /* 'Logged in as ...' */
-        }
-        ?>
-    <?php endif ?>
+    <div class="container">
+        <nav class="nav" data-role-menu="">
+            <h1>Zgłoszenia</h1>
+            <ul>
+              <li><a href="/nowe-zgloszenie.html">Nowe zgłoszenie</a></li>
+              <?php if ($conf['useacl'] && !empty($_SERVER['REMOTE_USER'])) { ?>
+              <li><a href='/moje-zgloszenia.html'>Moje zgłoszenia</a></li>
+              <?php }; ?>
+            </ul>
+            <h1>Wiki</h1>
+            <ul>
+              <?php if ($conf['useacl']) : ?>
+                <?php if (!empty($_SERVER['REMOTE_USER'])) { ?>
+                <li class='username'><?php tpl_userinfo(); /* 'Logged in as ...' */ ?></li>
+                <?php }
+                      echo (new \dokuwiki\Menu\UserMenu())->getListItems('action ');
+                ?>
+              <?php endif ?>
+            </ul>
+            <div class="spacer"></div>
+            <ul><li>
+            <?php echo (new \dokuwiki\Menu\MobileMenu())->getDropdown($lang['tools']); ?>
+            </li><li>
+            <?php echo (new \dokuwiki\Menu\SiteMenu())->getListItems('action ', false); ?>
+            </li></ul>
+        </nav>
+    </div>
 </header><!-- /header -->
 
 <!-- BREADCRUMBS (moved outside fixed header) -->
