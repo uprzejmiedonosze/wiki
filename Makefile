@@ -9,5 +9,5 @@ dev: clear-cache
 
 .PHONY: deploy
 deploy:
-	@rsync -r bin lib conf inc vendor *php workflow:/var/www/wiki.uprzejmiedonosze.net/wiki/
+	@rsync -r bin lib conf inc vendor *php workflow.nieradka.net:/var/www/wiki.uprzejmiedonosze.net/wiki/
 
