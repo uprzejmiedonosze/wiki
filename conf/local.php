@@ -6,18 +6,18 @@ $conf['license'] = 'cc-by-sa';
 $conf['disableactions'] = 'register';
 $conf['template']    = 'uprzejmiedonosze';
 
-  
-$conf['baseurl'] = 'https://uprzejmiedonosze.net/';
-$conf['basedir']    = '/wiki/';
-$conf['cookiedir']  = '/wiki/';
-$conf['defaultgroup'] = 'user';
-$conf['sepchar']    = '_';
-$conf['breadcrumbs'] = 0;
-$conf['useacl']     = 1;
-$conf['userewrite'] = 2;
-$conf['useslash']   = 0;
 
- if ($_SERVER['HTTP_HOST'] === 'ud-dev.x93.org') {
+$conf['baseurl']      = 'https://uprzejmiedonosze.net/wiki/';
+$conf['basedir']      = '/wiki/';
+$conf['cookiedir']    = '/wiki/';
+$conf['defaultgroup'] = 'user';
+$conf['sepchar']      = '_';
+$conf['breadcrumbs']  = 0;
+$conf['useacl']      = 1;
+$conf['userewrite']  = 1;
+$conf['useslash']    = 1;
+
+if ($_SERVER['HTTP_HOST'] === 'ud-dev.x93.org') {
     $conf['baseurl']    = 'https://ud-dev.x93.org/';    
 } else {
     require(dirname(__FILE__) . '/local-prod.php');
