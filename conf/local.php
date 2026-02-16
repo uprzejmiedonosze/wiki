@@ -7,7 +7,7 @@ $conf['disableactions'] = 'register';
 $conf['template']    = 'uprzejmiedonosze';
 
 
-$conf['baseurl']      = 'https://uprzejmiedonosze.net/wiki/';
+$conf['baseurl']      = 'https://uprzejmiedonosze.net/';
 $conf['basedir']      = '/wiki/';
 $conf['cookiedir']    = '/wiki/';
 $conf['defaultgroup'] = 'user';
