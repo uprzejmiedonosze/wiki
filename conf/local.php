@@ -18,7 +18,12 @@ $conf['userewrite']  = 1;
 $conf['useslash']    = 1;
 
 if ($_SERVER['HTTP_HOST'] === 'ud-dev.x93.org') {
-    $conf['baseurl']    = 'https://ud-dev.x93.org/';    
+    $conf['baseurl']    = 'https://ud-dev.x93.org/';
+} else if ($_SERVER['HTTP_HOST'] === 'localhost:8080') {
+    $conf['baseurl']    = 'http://localhost:8080/';
+    $conf['basedir']      = '';
+    $conf['useacl']      = 0;
+    $conf['userewrite']  = 0;
 } else {
     require(dirname(__FILE__) . '/local-prod.php');
 }
