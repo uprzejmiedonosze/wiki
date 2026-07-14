@@ -17,6 +17,7 @@ use dokuwiki\Remote\Response\User;
 use dokuwiki\Search\Indexer;
 use dokuwiki\Search\FulltextSearch;
 use dokuwiki\Search\MetadataSearch;
+use dokuwiki\Utf8\PhpString;
 use dokuwiki\Utf8\Sort;
 
 /**
@@ -200,6 +201,8 @@ class ApiCore
      * This call allows to check the permissions for a given page/media and user/group combination.
      * If no user/group is given, the current user is used.
      *
+     * Checking the permissions of another user is restricted to superusers.
+     *
      * Read the link below to learn more about the permission levels.
      *
      * @link https://www.dokuwiki.org/acl#background_info
@@ -207,6 +210,7 @@ class ApiCore
      * @param string $user username
      * @param string[] $groups array of groups
      * @return int permission level
+     * @throws AccessDeniedException
      * @throws RemoteException
      */
     public function aclCheck($page, $user = '', $groups = [])
@@ -219,6 +223,10 @@ class ApiCore
         if ($user === '') {
             return auth_quickaclcheck($page);
         } else {
+            // checking another user's permissions discloses their ACL posture, restrict to superusers
+            if (!$this->isSelf($user) && !auth_isadmin()) {
+                throw new AccessDeniedException('Only admins are allowed to check ACL for other users', 114);
+            }
             if ($groups === []) {
                 $userinfo = $auth->getUserData($user);
                 if ($userinfo === false) {
@@ -229,6 +237,30 @@ class ApiCore
             }
             return auth_aclcheck($page, $user, $groups);
         }
+    }
+
+    /**
+     * Check whether the given user is the currently logged-in user
+     *
+     * The comparison normalizes both names the same way the ACL machinery matches
+     * them, so on a case-insensitive backend a differently-cased spelling of the
+     * current user is still recognized as themselves.
+     *
+     * @param string $user username to compare against the current user
+     * @return bool
+     */
+    protected function isSelf($user)
+    {
+        /** @var AuthPlugin $auth */
+        global $auth;
+        global $INPUT;
+
+        $curUser = $INPUT->server->str('REMOTE_USER');
+        if (!$auth->isCaseSensitive()) {
+            $user = PhpString::strtolower($user);
+            $curUser = PhpString::strtolower($curUser);
+        }
+        return $auth->cleanUser($user) === $auth->cleanUser($curUser);
     }
 
     // endregion
@@ -838,7 +870,7 @@ class ApiCore
     public function getMedia($media, $rev = 0)
     {
         $media = cleanID($media);
-        if (auth_quickaclcheck($media) < AUTH_READ) {
+        if (auth_quickaclcheck(mediaAclPath($media)) < AUTH_READ) {
             throw new AccessDeniedException('You are not allowed to read this media file', 211);
         }
 
@@ -875,7 +907,7 @@ class ApiCore
     public function getMediaInfo($media, $rev = 0, $author = false, $hash = false)
     {
         $media = cleanID($media);
-        if (auth_quickaclcheck($media) < AUTH_READ) {
+        if (auth_quickaclcheck(mediaAclPath($media)) < AUTH_READ) {
             throw new AccessDeniedException('You are not allowed to read this media file', 211);
         }
 
@@ -912,7 +944,7 @@ class ApiCore
     public function getMediaUsage($media)
     {
         $media = cleanID($media);
-        if (auth_quickaclcheck($media) < AUTH_READ) {
+        if (auth_quickaclcheck(mediaAclPath($media)) < AUTH_READ) {
             throw new AccessDeniedException('You are not allowed to read this media file', 211);
         }
         if (!media_exists($media)) {
@@ -944,7 +976,7 @@ class ApiCore
 
         $media = cleanID($media);
         // check that this media exists
-        if (auth_quickaclcheck($media) < AUTH_READ) {
+        if (auth_quickaclcheck(mediaAclPath($media)) < AUTH_READ) {
             throw new AccessDeniedException('You are not allowed to read this media file', 211);
         }
         if (!media_exists($media, 0)) {
@@ -994,7 +1026,7 @@ class ApiCore
     public function saveMedia($media, $base64, $overwrite = false)
     {
         $media = cleanID($media);
-        $auth = auth_quickaclcheck(getNS($media) . ':*');
+        $auth = auth_quickaclcheck(mediaAclPath($media));
 
         if ($media === '') {
             throw new RemoteException('Empty or invalid media ID given', 231);
@@ -1047,7 +1079,7 @@ class ApiCore
     {
         $media = cleanID($media);
 
-        $auth = auth_quickaclcheck($media);
+        $auth = auth_quickaclcheck(mediaAclPath($media));
         $res = media_delete($media, $auth);
         if ($res & DOKU_MEDIA_DELETED) {
             return true;

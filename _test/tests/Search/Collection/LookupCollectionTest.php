@@ -5,10 +5,55 @@ namespace dokuwiki\test\Search\Collection;
 use dokuwiki\Search\Collection\PageMetaCollection;
 use dokuwiki\Search\Exception\IndexIntegrityException;
 use dokuwiki\Search\Exception\IndexLockException;
+use dokuwiki\Search\Index\FileIndex;
+use dokuwiki\Search\Index\Lock;
 use dokuwiki\Search\Index\MemoryIndex;
 
 class LookupCollectionTest extends \DokuWikiTest
 {
+    protected function tearDown(): void
+    {
+        Lock::releaseAll();
+        parent::tearDown();
+    }
+
+    /**
+     * A shared, caller-owned index lock must survive a collection lock()/unlock() cycle
+     *
+     * Indexer::addPage() locks the page index once, then hands it to a series of
+     * collections that each lock() and unlock() around their work. The collection must
+     * treat that shared, already-locked index as owned by the caller and leave its lock
+     * untouched - previously the collection's unlock() released it, dropping the caller's
+     * lock (and the filesystem lock) mid-operation.
+     */
+    public function testSharedIndexLockSurvivesCollectionCycle()
+    {
+        global $conf;
+        // a dedicated shared index name so this mutating test cannot disturb the RIDs
+        // the other tests rely on in this class's shared data dir
+        $lockDir = $conf['lockdir'] . '/sharedlockentity.index';
+
+        // caller acquires the shared entity index lock, as Indexer::addPage() does
+        // with the page index
+        $sharedIndex = new FileIndex('sharedlockentity', '', true);
+        $this->assertTrue($sharedIndex->isWritable());
+        $this->assertDirectoryExists($lockDir);
+
+        // several collections work on the shared index in turn
+        foreach (['sharedlock_one', 'sharedlock_two'] as $key) {
+            (new PageMetaCollection($key, $sharedIndex))->lock()
+                ->addEntity('sharedlock:start', ['wiki:a', 'wiki:b'])->unlock();
+
+            // the caller's lock on the shared index must still be held
+            $this->assertTrue($sharedIndex->isWritable(), "shared lock dropped after $key");
+            $this->assertDirectoryExists($lockDir, "filesystem lock dropped after $key");
+        }
+
+        // releasing the caller's own lock finally drops it
+        $sharedIndex->unlock();
+        $this->assertFalse($sharedIndex->isWritable());
+        $this->assertDirectoryDoesNotExist($lockDir);
+    }
     /**
      * Add data and directly check the underlying indexes for correctness
      */
@@ -242,6 +287,28 @@ class LookupCollectionTest extends \DokuWikiTest
         $result = $index->getEntitiesWithData();
         sort($result);
         $this->assertEquals(['wiki:other', 'wiki:start'], $result);
+    }
+
+    /**
+     * histogram() returns each token with the number of entities carrying it,
+     * ordered by frequency and filtered by min/max/minlen
+     */
+    public function testHistogram()
+    {
+        $index = new MockLookupCollection('hist_entity', 'hist_token', 'hist_freq', 'hist_reverse');
+        $index->lock();
+        $index->addEntity('p:a', ['news', 'wiki', 'ab']);
+        $index->addEntity('p:b', ['news']);
+        $index->addEntity('p:c', ['news', 'tech']);
+        $index->unlock();
+
+        $this->assertSame(['news' => 3, 'wiki' => 1, 'tech' => 1], $index->histogram(1, 0, 3));
+        $this->assertSame(['news' => 3], $index->histogram(2, 0, 3), 'min filter');
+        $this->assertSame(['wiki' => 1, 'tech' => 1], $index->histogram(1, 2, 3), 'max filter');
+        $this->assertArrayHasKey('ab', $index->histogram(1, 0, 2), 'minlen 2 keeps short token');
+
+        $empty = new MockLookupCollection('histe_entity', 'histe_token', 'histe_freq', 'histe_reverse');
+        $this->assertSame([], $empty->histogram());
     }
 
     /**

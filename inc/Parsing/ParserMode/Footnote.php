@@ -8,20 +8,26 @@ use dokuwiki\Parsing\ModeRegistry;
 
 class Footnote extends AbstractMode
 {
-    /**
-     * Footnote constructor.
-     */
-    public function __construct()
+    /** @inheritdoc */
+    protected function allowedCategories(): array
     {
-        $this->allowedModes = ModeRegistry::getInstance()->getModesForCategories([
+        return [
             ModeRegistry::CATEGORY_CONTAINER,
             ModeRegistry::CATEGORY_FORMATTING,
             ModeRegistry::CATEGORY_SUBSTITUTION,
             ModeRegistry::CATEGORY_PROTECTED,
             ModeRegistry::CATEGORY_DISABLED,
-        ]);
+        ];
+    }
 
-        unset($this->allowedModes[array_search('footnote', $this->allowedModes)]);
+    /**
+     * Footnotes cannot nest, so footnote is excluded from its own content.
+     *
+     * @inheritdoc
+     */
+    protected function filterAllowedModes(array $modes): array
+    {
+        return array_values(array_filter($modes, static fn($m) => $m !== 'footnote'));
     }
 
     /** @inheritdoc */
@@ -33,20 +39,14 @@ class Footnote extends AbstractMode
     /** @inheritdoc */
     public function connectTo($mode)
     {
-        $this->Lexer->addEntryPattern(
-            '\x28\x28(?=.*\x29\x29)',
-            $mode,
-            'footnote'
-        );
+        $this->Lexer->addEntryPattern('\x28\x28', $mode, 'footnote');
     }
 
     /** @inheritdoc */
     public function postConnect()
     {
-        $this->Lexer->addExitPattern(
-            '\x29\x29',
-            'footnote'
-        );
+        $this->Lexer->addExitPattern('\x29\x29', 'footnote');
+        $this->Lexer->addCloserPattern('\x29\x29', 'footnote');
     }
 
     /** @inheritdoc */
