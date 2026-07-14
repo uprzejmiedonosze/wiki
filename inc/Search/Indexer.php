@@ -4,7 +4,6 @@ namespace dokuwiki\Search;
 
 use dokuwiki\Debug\DebugHelper;
 use dokuwiki\Extension\Event;
-use dokuwiki\Search\Collection\CollectionSearch;
 use dokuwiki\Search\Collection\PageFulltextCollection;
 use dokuwiki\Search\Collection\PageMetaCollection;
 use dokuwiki\Search\Collection\PageTitleCollection;
@@ -12,11 +11,9 @@ use dokuwiki\Search\Exception\IndexAccessException;
 use dokuwiki\Search\Exception\IndexIntegrityException;
 use dokuwiki\Search\Exception\IndexLockException;
 use dokuwiki\Search\Exception\IndexWriteException;
-use dokuwiki\Search\Exception\SearchException;
 use dokuwiki\Search\Index\FileIndex;
 use dokuwiki\Search\Index\Lock;
 use dokuwiki\Search\Index\MemoryIndex;
-use dokuwiki\Search\Index\TupleOps;
 
 // Version tag used to force rebuild on upgrade
 const INDEXER_VERSION = 9;
@@ -118,8 +115,11 @@ class Indexer
 
         if (trim(io_readFile($idxtag)) != $this->getVersion()) return true;
 
+        // the index tag is written when the page is indexed; the page only needs
+        // (re-)indexing if it was changed *after* that - an equal mtime means it was
+        // saved and indexed within the same second and is therefore up to date
         $last = @filemtime($idxtag);
-        return $last <= @filemtime(wikiFN($page));
+        return $last < @filemtime(wikiFN($page));
     }
 
     /**
@@ -130,15 +130,16 @@ class Indexer
      * @param string $page The page to index
      * @param bool $force force reindexing even when the index is up to date
      *
+     * @return bool true if the page was indexed, false if there was nothing to do
      * @throws IndexAccessException
      * @throws IndexLockException
      * @throws IndexWriteException
      */
-    public function addPage(string $page, bool $force = false): void
+    public function addPage(string $page, bool $force = false): bool
     {
         if (!$this->needsIndexing($page, $force)) {
             $this->log("Indexer: index for $page up to date");
-            return;
+            return false;
         }
 
         // create shared writable page index early so we can resolve the PID for plugins
@@ -199,6 +200,7 @@ class Indexer
         // update index tag file
         io_saveFile(metaFN($data['page'], '.indexed'), $this->getVersion());
         $this->log("Indexer: finished indexing {$data['page']}");
+        return true;
     }
 
     /**
@@ -209,16 +211,17 @@ class Indexer
      * @param string $page The page to remove
      * @param bool $force force deletion even when no .indexed tag exists
      *
+     * @return bool true if the page was removed, false if there was nothing to do
      * @throws IndexAccessException
      * @throws IndexLockException
      * @throws IndexWriteException
      */
-    public function deletePage(string $page, bool $force = false): void
+    public function deletePage(string $page, bool $force = false): bool
     {
         $idxtag = metaFN($page, '.indexed');
         if (!$force && !file_exists($idxtag)) {
             $this->log("Indexer: $page.indexed file does not exist, ignoring");
-            return;
+            return false;
         }
 
         $pageIndex = new FileIndex('page', '', true);
@@ -232,25 +235,70 @@ class Indexer
 
         $this->log("Indexer: deleted $page from index");
         @unlink($idxtag);
+        return true;
     }
 
     /**
      * Rename a page in the search index
      *
-     * The page must already have been moved on disk before calling this.
-     * Clears the old page's data and re-indexes under the new name.
+     * This renames the page's entity entry in place: its entity ID (the row in the
+     * page index) is kept and only its name is changed. Because every collection
+     * (title, fulltext and all metadata keys such as relation_references) is keyed by
+     * that entity ID, all token, frequency and reverse associations are preserved and
+     * transparently belong to the new name afterwards.
+     *
+     * In particular this keeps the renamed page's *outgoing* references intact. That is
+     * essential during multi-step operations such as namespace moves: a page renamed
+     * early on must still be discoverable as a backlink source for pages that are moved
+     * later. Re-indexing from disk instead would lose this, because the destination page
+     * has usually not been written to disk yet when this method is called.
      *
      * @param string $oldpage The old page name
      * @param string $newpage The new page name
      *
+     * @return bool true if the page was renamed, false if there was nothing to do
      * @throws IndexAccessException
      * @throws IndexLockException
      * @throws IndexWriteException
      */
-    public function renamePage(string $oldpage, string $newpage): void
+    public function renamePage(string $oldpage, string $newpage): bool
     {
-        $this->deletePage($oldpage, true);
-        $this->addPage($newpage, true);
+        if ($oldpage === $newpage) return false;
+
+        $pageIndex = new FileIndex('page', '', true);
+
+        // locate the existing entity rows; stop as soon as both are known
+        $oldId = null;
+        $newId = null;
+        foreach ($pageIndex as $rid => $value) {
+            if ($value === $oldpage) $oldId = $rid;
+            if ($value === $newpage) $newId = $rid;
+            if ($oldId !== null && $newId !== null) break;
+        }
+
+        // nothing to rename if the old page was never indexed
+        if ($oldId === null) {
+            $pageIndex->unlock();
+            $this->log("Indexer: $oldpage is not in the index, nothing to rename");
+            return false;
+        }
+
+        // If the new name already has its own entity, drop its indexed data first.
+        // deletePage() intentionally keeps the entity row in page.idx, so we additionally
+        // blank that row - an empty entry is the index's "removed" marker (see getAllPages()).
+        // Otherwise two rows would carry the new name and a lookup could resolve to the
+        // now-empty one instead of the renamed entity that holds the data.
+        if ($newId !== null) {
+            $this->deletePage($newpage, true);
+            $pageIndex->changeRow($newId, '');
+        }
+
+        // rename in place — keeps the entity ID and thus all index associations
+        $pageIndex->changeRow($oldId, $newpage);
+
+        $pageIndex->unlock();
+        $this->log("Indexer: renamed $oldpage to $newpage in index");
+        return true;
     }
 
     /**
@@ -329,48 +377,49 @@ class Indexer
     /**
      * Update the metadata registry with new keys
      *
+     * The read-modify-write of the registry file is guarded by a lock so that
+     * concurrent indexing of pages carrying different new metadata keys cannot
+     * drop a key: without the lock two processes could read the same registry,
+     * each append a different key, and the later writer would clobber the other.
+     *
      * @param string[] $keys metadata key names to ensure are registered
+     *
+     * @throws IndexLockException when the registry lock cannot be acquired
+     *
+     * @internal Only marked public for access via LegacyIndexer
      */
-    protected function updateMetadataRegistry(array $keys): void
+    public function updateMetadataRegistry(array $keys): void
     {
         global $conf;
         $fn = $conf['indexdir'] . '/metadata.idx';
-        $existing = file_exists($fn) ? file($fn, FILE_IGNORE_NEW_LINES) : [];
-        if (!$existing) $existing = [];
 
-        $added = false;
-        foreach ($keys as $key) {
-            if (!in_array($key, $existing)) {
-                $existing[] = $key;
-                $added = true;
+        Lock::acquire('metadata');
+        try {
+            $existing = file_exists($fn) ? file($fn, FILE_IGNORE_NEW_LINES) : [];
+            if (!$existing) $existing = [];
+
+            $added = false;
+            foreach ($keys as $key) {
+                if (!in_array($key, $existing)) {
+                    $existing[] = $key;
+                    $added = true;
+                }
             }
+
+            if ($added) {
+                io_saveFile($fn, implode("\n", $existing) . "\n");
+            }
+        } finally {
+            Lock::release('metadata');
         }
-
-        if ($added) {
-            io_saveFile($fn, implode("\n", $existing) . "\n");
-        }
-    }
-
-    // region Deprecated methods
-
-    /**
-     * Find pages containing a metadata value
-     *
-     * @param string $key metadata key name
-     * @param string|string[] $value search term(s)
-     * @param callable|null $func ignored, kept for backward compatibility
-     * @return array
-     *
-     * @deprecated 2026-04-07 use MetadataSearch::lookupKey() instead
-     */
-    public function lookupKey($key, &$value, $func = null)
-    {
-        DebugHelper::dbgDeprecatedFunction(MetadataSearch::class . '::lookupKey()');
-        return (new MetadataSearch())->lookupKey($key, $value);
     }
 
     /**
      * Return a list of all indexed pages, optionally filtered by metadata key
+     *
+     * Kept on Indexer (not just LegacyIndexer) because several plugins call it
+     * directly on `new Indexer()` instances rather than going through
+     * idx_get_indexer().
      *
      * @param string|null $key metadata key name
      * @return string[]
@@ -382,154 +431,4 @@ class Indexer
         DebugHelper::dbgDeprecatedFunction(MetadataSearch::class . '::getPages()');
         return (new MetadataSearch())->getPages($key);
     }
-
-    /**
-     * Add metadata values for a page
-     *
-     * @param string $page page name
-     * @param string $key metadata key name
-     * @param string|string[]|null $value value(s) to add
-     * @return bool
-     *
-     * @deprecated 2026-04-07 use Collection classes directly instead
-     */
-    public function addMetaKeys($page, $key, $value = null)
-    {
-        DebugHelper::dbgDeprecatedFunction('Collection classes');
-        try {
-            if ($key === 'title') {
-                $collection = new PageTitleCollection();
-            } else {
-                $collection = new PageMetaCollection($key);
-            }
-            $values = is_array($value) ? $value : ($value !== null && $value !== '' ? [$value] : []);
-            $collection->lock()->addEntity($page, $values)->unlock();
-            $this->updateMetadataRegistry([$key]);
-            return true;
-        } catch (SearchException) {
-            return false;
-        }
-    }
-
-    /**
-     * Rename a metadata value in the index
-     *
-     * @param string $key metadata key name
-     * @param string $oldvalue old value
-     * @param string $newvalue new value
-     * @return bool
-     *
-     * @deprecated 2026-04-07 use Collection classes directly instead
-     */
-    public function renameMetaValue($key, $oldvalue, $newvalue)
-    {
-        DebugHelper::dbgDeprecatedFunction('Collection classes');
-        try {
-            $collection = new PageMetaCollection($key);
-            $collection->lock();
-
-            $tokenIndex = $collection->getTokenIndex();
-
-            // find old value — search() is read-only, won't create entries
-            $matches = $tokenIndex->search('/^' . preg_quote($oldvalue, '/') . '$/');
-            if ($matches === []) {
-                $collection->unlock();
-                return true;
-            }
-            $oldid = array_key_first($matches);
-
-            // check if new value already exists (read-only lookup)
-            $newMatches = $tokenIndex->search('/^' . preg_quote($newvalue, '/') . '$/');
-
-            if ($newMatches !== []) {
-                // both values exist — merge frequency data from old to new
-                $newid = array_key_first($newMatches);
-                $freqIndex = $collection->getFrequencyIndex();
-                $reverseIndex = $collection->getReverseIndex();
-                $oldFreqLine = $freqIndex->retrieveRow($oldid);
-
-                if ($oldFreqLine !== '') {
-                    $newFreqLine = $freqIndex->retrieveRow($newid);
-                    foreach (TupleOps::parseTuples($oldFreqLine) as $entityId => $count) {
-                        $newFreqLine = TupleOps::updateTuple($newFreqLine, $entityId, $count);
-
-                        // update reverse index: remove old token, add new
-                        $reverseRow = $reverseIndex->retrieveRow((int)$entityId);
-                        $keyline = explode(':', $reverseRow);
-                        $keyline = array_diff($keyline, [(string)$oldid]);
-                        if (!in_array((string)$newid, $keyline)) {
-                            $keyline[] = $newid;
-                        }
-                        $reverseIndex->changeRow(
-                            (int)$entityId,
-                            implode(':', array_filter($keyline, fn($v) => $v !== ''))
-                        );
-                    }
-                    $freqIndex->changeRow($oldid, '');
-                    $freqIndex->changeRow($newid, $newFreqLine);
-                }
-            } else {
-                // new value doesn't exist — simple rename
-                $tokenIndex->changeRow($oldid, $newvalue);
-            }
-
-            $collection->unlock();
-            return true;
-        } catch (SearchException) {
-            return false;
-        }
-    }
-
-    /**
-     * Get the page ID for a page name
-     *
-     * @param string $page page name
-     * @return int|false
-     *
-     * @deprecated 2026-04-07 use FileIndex directly instead
-     */
-    public function getPID($page)
-    {
-        DebugHelper::dbgDeprecatedFunction(FileIndex::class);
-        try {
-            return (new FileIndex('page', '', true))->accessCachedValue($page);
-        } catch (SearchException) {
-            return false;
-        }
-    }
-
-    /**
-     * Find tokens in the fulltext index
-     *
-     * @param array $tokens list of words to search for
-     * @return array list of pages found [word => [page => count, ...]]
-     *
-     * @deprecated 2026-04-07 use CollectionSearch on PageFulltextCollection instead
-     */
-    public function lookup($tokens)
-    {
-        DebugHelper::dbgDeprecatedFunction(CollectionSearch::class);
-        $collection = new PageFulltextCollection();
-        $search = new CollectionSearch($collection);
-        $termMap = [];
-        foreach ($tokens as $token) {
-            if (!Tokenizer::isValidSearchTerm($token)) continue;
-            $term = $search->addTerm($token);
-            $termMap[$token] = $term;
-        }
-
-        if ($termMap === []) return [];
-        $search->execute();
-
-        $result = [];
-        foreach ($termMap as $word => $term) {
-            $freqs = $term->getEntityFrequencies();
-            // filter to only existing pages
-            $filtered = array_filter($freqs, fn($page) => page_exists($page, '', false), ARRAY_FILTER_USE_KEY);
-            $result[$word] = $filtered;
-        }
-        return $result;
-    }
-
-    // endregion
 }

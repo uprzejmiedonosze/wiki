@@ -18,18 +18,19 @@ class Emphasis extends AbstractFormatting
 
     /**
      * @inheritdoc
-     * @see https://github.com/dokuwiki/dokuwiki/issues/384
-     * @see https://github.com/dokuwiki/dokuwiki/issues/763
-     * @see https://github.com/dokuwiki/dokuwiki/issues/1468
+     *
+     * Flanking rules: the opener must be followed by a non-whitespace
+     * character other than a slash, and the closer must be preceded by a
+     * non-whitespace character.
      */
     protected function getEntryPattern(): string
     {
-        return '//(?=[^\x00]*[^:])';
+        return '//(?=[^\s/])';
     }
 
     /** @inheritdoc */
     protected function getExitPattern(): string
     {
-        return '//';
+        return '(?<=[^\s])//';
     }
 }

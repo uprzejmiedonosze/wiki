@@ -92,13 +92,15 @@ function getVersionData()
         $version['type'] = 'Git';
         $version['date'] = 'unknown';
 
-        // First try to get date and commit hash by calling Git
+        // First try to get date and commit hash by calling Git. The
+        // --pretty=reference format ("hash (subject, date)") avoids percent
+        // placeholders, which escapeshellarg() turns into spaces on Windows.
         if (function_exists('shell_exec')) {
-            $args = ['git', 'log', '-1', '--pretty=format:%h %cd', '--date=short'];
+            $args = ['git', 'log', '-1', '--pretty=reference'];
             $commitInfo = shell_exec(implode(' ', array_map(escapeshellarg(...), $args)));
-            if ($commitInfo) {
-                [$version['sha'], $date] = explode(' ', $commitInfo);
-                $version['date'] = hsc($date);
+            if (preg_match('/^([0-9a-f]{7,40}) \(.*, (\d{4}-\d{2}-\d{2})\)$/', trim((string)$commitInfo), $m)) {
+                $version['sha'] = $m[1];
+                $version['date'] = $m[2];
                 return $version;
             }
         }
@@ -203,7 +205,7 @@ function getRuntimeVersions()
  */
 function getOsRelease()
 {
-    $reader = fn($file) => @parse_ini_string(preg_replace('/#.*$/m', '', file_get_contents($file)));
+    $reader = fn($file) => @parse_ini_string(preg_replace('/^\s*#.*$/m', '', file_get_contents($file))) ?: [];
 
     $osRelease = [];
     if (@file_exists('/etc/os-release')) {
@@ -216,10 +218,14 @@ function getOsRelease()
         $osRelease['NAME'] = 'Synology DSM';
         $osRelease['ID'] = 'synology';
         $osRelease['ID_LIKE'] = 'linux';
-        $osRelease['VERSION_ID'] = $synoVersion['productversion'];
-        $osRelease['VERSION'] = $synoVersion['productversion'];
-        $osRelease['SYNO_MODEL'] = $synoInfo['upnpmodelname'];
-        $osRelease['PRETTY_NAME'] = implode(' ', [$osRelease['NAME'], $osRelease['VERSION'], $osRelease['SYNO_MODEL']]);
+        $osRelease['VERSION_ID'] = $synoVersion['productversion'] ?? '';
+        $osRelease['VERSION'] = $synoVersion['productversion'] ?? '';
+        $osRelease['SYNO_MODEL'] = $synoInfo['upnpmodelname'] ?? '';
+        $osRelease['PRETTY_NAME'] = trim(implode(' ', [
+            $osRelease['NAME'],
+            $osRelease['VERSION'],
+            $osRelease['SYNO_MODEL']
+        ]));
     }
     return $osRelease;
 }

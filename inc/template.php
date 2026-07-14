@@ -1180,14 +1180,14 @@ function tpl_img($maxwidth = 0, $maxheight = 0, $link = true, $params = null)
     global $INPUT;
     global $REV;
 
-    // rotation-aware bbox fit; returns [0, 0] for SVG / unreadable files
-    [$w, $h] = (new MediaFile($IMG, $REV))->getDisplayDimensions($maxwidth, $maxheight, false);
+    // rotation-aware bounding-box fit; matches the fit=1 src below (no upscaling); [0, 0] for SVG
+    [$w, $h] = (new MediaFile($IMG, $REV))->getDisplayDimensions($maxwidth, $maxheight, true);
 
-    //prepare URLs
+    //prepare URLs - fit=1 requests the no-upscale bounding-box resize from fetch.php
     $srcParams = ['cache' => $INPUT->str('cache'), 'rev' => $REV];
     if ($maxwidth) $srcParams['w'] = $maxwidth;
     if ($maxheight) $srcParams['h'] = $maxheight;
-    if ($maxwidth && $maxheight) $srcParams['fit'] = 1;
+    if ($maxwidth || $maxheight) $srcParams['fit'] = 1;
     $url = ml($IMG, ['cache' => $INPUT->str('cache'), 'rev' => $REV], true, '&');
     $src = ml($IMG, $srcParams, true, '&');
 
@@ -1354,7 +1354,9 @@ function tpl_getLang($id)
  */
 function tpl_locale_xhtml($id)
 {
-    return p_cached_output(tpl_localeFN($id));
+    // template locale files are assets authored in DokuWiki syntax; render
+    // them as 'dw' regardless of the configured wiki syntax preference
+    return p_cached_output(tpl_localeFN($id), 'xhtml', '', 'dw');
 }
 
 /**
