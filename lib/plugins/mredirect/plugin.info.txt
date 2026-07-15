@@ -1,0 +1,7 @@
+base   mredirect
+author Morten Nielsen
+email  mortenb@gmail.com
+date   2014-05-10
+name   MRedirect
+desc   Redirection plugin - any page containing nothing but a standard link will auto-redirect instantaneously
+url    http://www.dokuwiki.org/wiki:plugins
