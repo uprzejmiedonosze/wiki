@@ -1,0 +1,18 @@
+# Local sanity check for the container itself (`make docker-dev`) - distinct
+# from `make dev` (docker/../Makefile's php -S router.php target), which is
+# still the faster loop for day-to-day content/template editing.
+#
+# `edge` only exists on the real host, created by the sibling `edge` project,
+# so it can't be `external: true` here. Un-externals it and drops the Traefik
+# labels/TLS, publishing straight to localhost instead.
+networks:
+  edge:
+    external: !reset false
+    name: !reset null
+
+services:
+  wiki:
+    networks: !reset [default]
+    ports:
+      - "8081:80"
+    labels: !reset {}

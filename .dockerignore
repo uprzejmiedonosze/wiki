@@ -1,0 +1,25 @@
+.git
+.github
+.vscode
+.claude
+_test
+*.md
+!README
+
+# Runtime state — never bake a snapshot of a dev machine's local wiki content
+# into the image; docker/Dockerfile copies the *tracked* seed content into
+# /var/www/seed-{data,conf} instead, and compose.yml's named volumes take it
+# from there on first boot.
+/data/attic/*
+/data/cache/*
+/data/index/*
+/data/locks/*
+/data/log/*
+/data/media_meta/*
+/data/media_attic/*
+/data/meta/*
+/data/tmp/*
+
+# Real secret, gitignored in the repo too — docker/entrypoint.sh generates
+# this from env vars on every container boot instead.
+/conf/local-prod.php

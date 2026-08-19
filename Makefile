@@ -1,13 +1,32 @@
-.PHONY: clear-cache
-clear-cache:
-	@rm -rf data/cache/[a-z0-9]
+# Docker (edge/Traefik) — the only supported path now, bare-metal (php -S /
+# rsync to workflow.nieradka.net) has been dropped from this Makefile. See
+# docker/Dockerfile, compose.yml, CLAUDE.md.
+
+REMOTE_HOST ?= wiki@getdreamestate.com
+REMOTE_DIR  ?= /opt/wiki
 
 .PHONY: dev
-dev: clear-cache
-	@echo "Starting DokuWiki development server with path mapping..."
-	@php -S localhost:8080 router.php
+dev:
+	@docker compose -f compose.yml -f compose.dev.yml up --build
+	# compose.dev.yml drops the `edge` external network requirement and
+	# Traefik labels - reach it at http://localhost:8081/wiki/ instead of
+	# the public hostname. WIKI_DOMAIN in .env is unused for this target.
+
+.PHONY: validate
+validate:
+	@docker compose config > /dev/null
 
 .PHONY: deploy
 deploy:
-	@rsync -r bin lib conf inc vendor *php workflow.nieradka.net:/var/www/wiki.uprzejmiedonosze.net/wiki/
+	@echo "==> Pushing to origin"
+	git push
+	@echo "==> Deploying on $(REMOTE_HOST)"
+	ssh $(REMOTE_HOST) 'cd $(REMOTE_DIR) && git pull && docker compose up -d --build --remove-orphans'
 
+.PHONY: logs
+logs:
+	@ssh $(REMOTE_HOST) 'cd $(REMOTE_DIR) && docker compose logs -f --tail=200'
+
+.PHONY: ps
+ps:
+	@ssh $(REMOTE_HOST) 'cd $(REMOTE_DIR) && docker compose ps'

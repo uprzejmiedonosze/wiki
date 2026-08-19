@@ -1,0 +1,43 @@
+name: wiki-uprzejmiedonosze
+
+networks:
+  edge:
+    external: true   # owned by the sibling `edge` project - must already be up on this host
+                      # (docker network ls | grep edge) before `docker compose up` here
+
+volumes:
+  wiki-data:   # data/ - pages, media, search index, logs. Seeded from the image's
+               # baked-in tracked content on first boot only (see docker/entrypoint.sh).
+  wiki-conf:   # conf/ - mainly acl.auth.php, hand-edited at runtime via the ACL
+               # Manager plugin, so it can't just live in the image. Same first-boot
+               # seeding as wiki-data. conf/local-prod.php is regenerated on every
+               # boot from env vars regardless (see entrypoint.sh) - it's a secret,
+               # never baked into the image or committed to the repo.
+
+services:
+  wiki:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    networks:
+      - edge
+    volumes:
+      - wiki-data:/var/www/html/data
+      - wiki-conf:/var/www/html/conf
+    environment:
+      AUTHUD_ENDPOINT: ${AUTHUD_ENDPOINT:?Set AUTHUD_ENDPOINT in .env}
+      AUTHUD_APIKEY: ${AUTHUD_APIKEY:?Set AUTHUD_APIKEY in .env}
+      WIKI_SUPERUSER: ${WIKI_SUPERUSER:-@admin}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/wiki/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.wiki.rule: Host(`${WIKI_DOMAIN:?Set WIKI_DOMAIN in .env}`) && PathPrefix(`/wiki`)
+      traefik.http.routers.wiki.entrypoints: websecure
+      traefik.http.routers.wiki.tls.certresolver: letsencrypt
+      traefik.http.services.wiki.loadbalancer.server.port: "80"

@@ -1,0 +1,44 @@
+{
+	admin off
+}
+
+# TLS is terminated by the sibling `edge` (Traefik) project — this Caddy only
+# ever sees plaintext HTTP forwarded from there, on the docker network.
+# This is a 1:1 port of the wiki.uprzejmiedonosze.net block from the current
+# host-Caddy config (see docker/README.md) — path layout (/wiki* prefix,
+# forbidden paths, rewrite rules) is unchanged so existing links keep working.
+:80 {
+	encode gzip zstd
+
+	handle_path /wiki* {
+		root * /var/www/html
+
+		@forbidden path /data/* /conf/* /bin/* /inc/* /install.php
+		handle @forbidden {
+			respond * 403
+		}
+
+		try_files {path} {path}/index.html
+
+		route {
+			handle_path /_media/* {
+				rewrite * /lib/exe/fetch.php?media={path}&{query}
+			}
+			handle_path /_detail/* {
+				rewrite * /lib/exe/detail.php?media={path}&{query}
+			}
+			handle /_export/* {
+				@export path_regexp export ^/_export/([^/]+)/(.*)
+				rewrite @export /doku.php?do=export_{re.export.1}&{query}&id={re.export.2}
+			}
+			handle / {
+				rewrite * /doku.php?{query}
+			}
+
+			try_files {path} /doku.php?id={path}&{query}
+		}
+
+		php_fastcgi 127.0.0.1:9000
+		file_server
+	}
+}
