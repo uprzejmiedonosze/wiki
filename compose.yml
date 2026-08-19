@@ -8,6 +8,11 @@ networks:
 volumes:
   wiki-data:   # data/ - pages, media, search index, logs. Seeded from the image's
                # baked-in tracked content on first boot only (see docker/entrypoint.sh).
+               # Only used when WIKI_DATA_SOURCE (below) is unset - on a host
+               # where the bare-metal wiki's data/ already lives on the same
+               # machine, WIKI_DATA_SOURCE instead bind-mounts it directly
+               # (see that host's own .env), so this named volume just
+               # never gets created/used there.
   wiki-conf:   # conf/ - mainly acl.auth.php, hand-edited at runtime via the ACL
                # Manager plugin, so it can't just live in the image. Same first-boot
                # seeding as wiki-data. conf/local-prod.php is regenerated on every
@@ -23,7 +28,20 @@ services:
     networks:
       - edge
     volumes:
-      - wiki-data:/var/www/html/data
+      # WIKI_DATA_SOURCE lets one host override the data/ source to a real
+      # bind-mount path instead of the default named volume - for a host
+      # where the bare-metal wiki already lives on the same machine, point
+      # this straight at its existing data/ so real page content is
+      # visible immediately with no copy/migration step. Deliberately
+      # :ro (via WIKI_DATA_RO) whenever bind-mounted: the bare-metal
+      # PHP-FPM there still owns those files as its own www-data (host
+      # uid 33) and is still the live site during the migration - this
+      # container's www-data is a *different* uid (82, Alpine vs Debian),
+      # so any write attempt from here (including a wrongly-unconditional
+      # chown, see entrypoint.sh) would silently break the bare-metal
+      # site's own write access. Unset on every other host -> exactly the
+      # previous plain named-volume behavior.
+      - ${WIKI_DATA_SOURCE:-wiki-data}:/var/www/html/data${WIKI_DATA_RO:+:ro}
       - wiki-conf:/var/www/html/conf
     environment:
       AUTHUD_ENDPOINT: ${AUTHUD_ENDPOINT:?Set AUTHUD_ENDPOINT in .env}

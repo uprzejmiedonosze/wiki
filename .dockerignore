@@ -23,3 +23,8 @@ _test
 # Real secret, gitignored in the repo too — docker/entrypoint.sh generates
 # this from env vars on every container boot instead.
 /conf/local-prod.php
+
+# The real .env (AUTHUD_APIKEY etc.) must never end up inside the image -
+# docker/entrypoint.sh reads it via compose's `environment:`, it doesn't
+# need the file itself present in the build context's destination.
+.env
