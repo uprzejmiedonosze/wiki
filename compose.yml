@@ -18,6 +18,16 @@ volumes:
                # seeding as wiki-data. conf/local-prod.php is regenerated on every
                # boot from env vars regardless (see entrypoint.sh) - it's a secret,
                # never baked into the image or committed to the repo.
+               # Only used when WIKI_CONF_SOURCE (below) is unset - see
+               # WIKI_DATA_SOURCE's comment above, same reasoning applies
+               # (this one caught live: users.auth.php is untracked in git
+               # entirely, so a fresh named volume seeded from the image
+               # never had it at all - every login failed with "user
+               # authentication is currently impossible" until this was
+               # bind-mounted to the real bare-metal conf/, which also had
+               # config drift beyond that one file, e.g. plugins.local.php
+               # disabling authad/authldap/authmysql/authpgsql to avoid
+               # clashing with authud - worth keeping in sync).
 
 services:
   wiki:
@@ -42,7 +52,7 @@ services:
       # site's own write access. Unset on every other host -> exactly the
       # previous plain named-volume behavior.
       - ${WIKI_DATA_SOURCE:-wiki-data}:/var/www/html/data${WIKI_DATA_RO:+:ro}
-      - wiki-conf:/var/www/html/conf
+      - ${WIKI_CONF_SOURCE:-wiki-conf}:/var/www/html/conf
     environment:
       AUTHUD_ENDPOINT: ${AUTHUD_ENDPOINT:?Set AUTHUD_ENDPOINT in .env}
       AUTHUD_APIKEY: ${AUTHUD_APIKEY:?Set AUTHUD_APIKEY in .env}
