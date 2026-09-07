@@ -73,11 +73,13 @@ function http_sendfile($file)
         header("X-LIGHTTPD-send-file: $file");
         ob_end_clean();
         exit;
-    } elseif ($conf['xsendfile'] == 2) {
+    }
+    if ($conf['xsendfile'] == 2) {
         header("X-Sendfile: $file");
         ob_end_clean();
         exit;
-    } elseif ($conf['xsendfile'] == 3) {
+    }
+    if ($conf['xsendfile'] == 3) {
         // FS#2388, #2895 nginx needs an internal redirect URL, not a file path.
         header("X-Accel-Redirect: " . http_xaccel_url($file));
         ob_end_clean();
