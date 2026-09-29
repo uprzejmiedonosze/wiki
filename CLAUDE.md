@@ -8,9 +8,9 @@ A DokuWiki fork (tracks `dokuwiki/dokuwiki` upstream via merges — see `git rem
 
 ## Deploy path: Docker, behind the sibling `edge` project
 
-The Makefile only runs the Docker path now — the old bare-metal targets (`php -S router.php`, `rsync` to `workflow.nieradka.net:/var/www/wiki.uprzejmiedonosze.net/wiki/`) have been removed from it. That bare-metal deployment (and its host-Caddy config) still exists and hasn't been decommissioned — `make deploy` no longer touches it, but nothing here has removed it either. Deploy target is `wiki@getdreamestate.com:/opt/wiki` (same physical box as the old bare-metal path, reachable as `workflow.nieradka.net` too — see `~/.ssh/config`'s fwknop `ProxyCommand`), where `/opt/wiki` already holds a clone of this repo.
+The Makefile only runs the Docker path — the old bare-metal targets (`php -S router.php`, `rsync` to `workflow.nieradka.net:/var/www/wiki.uprzejmiedonosze.net/wiki/`) have been removed from it. Deploy target is `uprzejmiedonosze.net:/opt/wiki`, the same host and `edge` Traefik as the `../uprzejmiedonosze` webapp project (moved here from `getdreamestate.com` to consolidate the project family on one host — see that host's own `edge/SERVERS.md` for the wider inventory).
 
-**Open question, not yet resolved**: the sibling `edge` project's Traefik binds host ports 80/443 directly (see `edge/compose.yml`). If this same box already runs a system Caddy bound to 80/443 for other domains (`getdreamestate.com`, `workflow.nieradka.net`, etc. — it does, per the host's `/etc/caddy/Caddyfile`), `edge`'s Traefik can't also bind those ports here without a conflict. Confirm how `edge` is actually meant to coexist with system Caddy on this host (Caddy proxies to Traefik? Traefik takes over and Caddy's other sites move under it too? different ports?) before running `make deploy` for real.
+This container is routed by `PathPrefix(/wiki)` on the same `Host(uprzejmiedonosze.net)` domain as the webapp's own router (`ud-prod`), not a separate `wiki.`-prefixed subdomain — **the `traefik.http.routers.wiki.priority` label in `compose.yml` is load-bearing**: Traefik's default tie-break is rule length, and `ud-prod`'s longer `Host(...) || Host(www...)` rule would otherwise win the whole domain and this router would never match. The legacy `wiki.uprzejmiedonosze.net` hostname now points at this same host too, via a `redirectRegex` router in `edge`'s per-host `dynamic.local/` (not tracked in this repo) that 301s old links to `uprzejmiedonosze.net/wiki/...`.
 
 ## Docker architecture
 
@@ -32,11 +32,10 @@ The Makefile only runs the Docker path now — the old bare-metal targets (`php 
 
 - `make validate` — `docker compose config`, requires a populated `.env` (`cp .env.example .env`)
 - `make dev` — `docker compose -f compose.yml -f compose.dev.yml up --build`; reach it at `http://localhost:8081/wiki/`. `compose.dev.yml` uses Compose's `!reset` merge tag to drop the `external: true` `edge` network requirement and the Traefik labels (which otherwise require the real `edge` network + `WIKI_DOMAIN` to mean anything) and publishes port 8081 instead
-- `make deploy` — `git push` then SSH into `REMOTE_HOST` (default `wiki@getdreamestate.com`, override via `make deploy REMOTE_HOST=...`), `git pull`, `docker compose up -d --build --remove-orphans` in `REMOTE_DIR` (default `/opt/wiki`)
+- `make deploy` — `git push` then SSH into `REMOTE_HOST` (default `uprzejmiedonosze.net`, override via `make deploy REMOTE_HOST=...`), `git pull`, `docker compose up -d --build --remove-orphans` in `REMOTE_DIR` (default `/opt/wiki`)
 - `make logs` / `make ps` — remote `docker compose logs -f` / `docker compose ps` over SSH
 
 ## Known gaps
 
-- **Port conflict between `edge`'s Traefik and this host's system Caddy is unresolved** — see above. Don't assume `make deploy` "just works" on a box where Caddy still owns 80/443.
-- **Old bare-metal deployment not decommissioned.** Its Caddyfile block and rsynced files on the same host still exist; DNS/cutover away from it hasn't happened.
+- **Old bare-metal deployment (`getdreamestate.com`, formerly `workflow.nieradka.net`'s host-Caddy vhost) not decommissioned.** Its Caddyfile block and any leftover files on that host still exist; nothing here has removed them.
 - `docker/Dockerfile`'s `COPY . .` picks up the whole repo, including `_test/`'s composer files if not careful and `docker/` itself — trimmed via `.dockerignore`, but re-check `.dockerignore` after adding new top-level dirs.

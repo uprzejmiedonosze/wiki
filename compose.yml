@@ -39,18 +39,17 @@ services:
       - edge
     volumes:
       # WIKI_DATA_SOURCE lets one host override the data/ source to a real
-      # bind-mount path instead of the default named volume - for a host
-      # where the bare-metal wiki already lives on the same machine, point
-      # this straight at its existing data/ so real page content is
-      # visible immediately with no copy/migration step. Deliberately
-      # :ro (via WIKI_DATA_RO) whenever bind-mounted: the bare-metal
-      # PHP-FPM there still owns those files as its own www-data (host
-      # uid 33) and is still the live site during the migration - this
-      # container's www-data is a *different* uid (82, Alpine vs Debian),
-      # so any write attempt from here (including a wrongly-unconditional
-      # chown, see entrypoint.sh) would silently break the bare-metal
-      # site's own write access. Unset on every other host -> exactly the
-      # previous plain named-volume behavior.
+      # bind-mount path instead of the default named volume - prod
+      # (uprzejmiedonosze.net) points this at /opt/wiki/data, the same
+      # path this container has always used, so real page content is
+      # visible immediately with no named-volume migration step.
+      # WIKI_DATA_RO was only ever needed during the original
+      # bare-metal-to-Docker migration on the old host (getdreamestate.com),
+      # where a separate bare-metal PHP-FPM process (host uid 33, Debian)
+      # still owned those files and was still the live site - that
+      # migration is done and this container is the sole owner of
+      # /opt/wiki/data now (its own www-data, uid 82), so WIKI_DATA_RO is
+      # unset here.
       - ${WIKI_DATA_SOURCE:-wiki-data}:/var/www/html/data${WIKI_DATA_RO:+:ro}
       - ${WIKI_CONF_SOURCE:-wiki-conf}:/var/www/html/conf
     environment:
@@ -65,7 +64,15 @@ services:
       start_period: 15s
     labels:
       traefik.enable: "true"
+      traefik.docker.network: edge
       traefik.http.routers.wiki.rule: Host(`${WIKI_DOMAIN:?Set WIKI_DOMAIN in .env}`) && PathPrefix(`/wiki`)
       traefik.http.routers.wiki.entrypoints: websecure
       traefik.http.routers.wiki.tls.certresolver: letsencrypt
+      # WIKI_DOMAIN is uprzejmiedonosze.net now (this container shares the
+      # host with the ../uprzejmiedonosze webapp project) - Traefik's
+      # default priority is rule length, and `ud-prod`'s rule
+      # (Host(uprzejmiedonosze.net) || Host(www.uprzejmiedonosze.net)) is
+      # longer than this one, so without an explicit priority the webapp's
+      # router would win the whole domain and this one would never match.
+      traefik.http.routers.wiki.priority: "1000"
       traefik.http.services.wiki.loadbalancer.server.port: "80"

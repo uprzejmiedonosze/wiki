@@ -2,7 +2,7 @@
 # rsync to workflow.nieradka.net) has been dropped from this Makefile. See
 # docker/Dockerfile, compose.yml, CLAUDE.md.
 
-REMOTE_HOST ?= wiki@getdreamestate.com
+REMOTE_HOST ?= uprzejmiedonosze.net
 REMOTE_DIR  ?= /opt/wiki
 
 .PHONY: dev
